@@ -111,7 +111,7 @@ class FilePreview {
         document.querySelectorAll('.sort-options input').forEach(input => {
             input.addEventListener('change', () => {
                 // 时长需要尝试播放获取，无法直接初始时长排序，不记忆时长排序选项
-                if (input.name == "sortField" && input.value != "duration") {
+                if (input.name == "sortField" && input.value != "duration" && input.value != "resolution") {
                     sessionStorage.setItem("previewSort", input.value);
                 } else if (input.name == "sortOrder") {
                     sessionStorage.setItem("previewOrder", input.value);
@@ -389,6 +389,16 @@ class FilePreview {
                 // Normal comparison for valid durations
                 return order * (a[field] - b[field]);
             });
+        } else if (field == 'resolution') {
+            this.fileItems.sort((a, b) => {
+                const widthA = a?.previewVideo?.width ?? 0;
+                const heightA = a?.previewVideo?.height ?? 0;
+                const widthB = b?.previewVideo?.width ?? 0;
+                const heightB = b?.previewVideo?.height ?? 0;
+                const pixelsA = widthA * heightA;
+                const pixelsB = widthB * heightB;
+                return order * (pixelsA - pixelsB);
+            });
         } else {
             this.fileItems.sort((a, b) => order * (a[field] - b[field]));
         }
@@ -494,13 +504,13 @@ class FilePreview {
             this.updateButtonStatus();
         });
         // 复制图标
-        item.html.querySelector('.copy').addEventListener('click', () => this.copy(item));
+        item.html.querySelector('.copy').addEventListener('click', async () => { await getClipboardText(item); this.copy(item); });
         // 删除图标
         item.html.querySelector('.delete').addEventListener('click', () => this.deleteItem(item));
         // 下载图标
-        item.html.querySelector('.download').addEventListener('click', () => this.downloadItem(item));
+        item.html.querySelector('.download').addEventListener('click', async () => { await getClipboardText(item); this.downloadItem(item); });
         // MQTT图标
-        item.html.querySelector('.mqtt').addEventListener('click', () => this.mqtt(item));
+        item.html.querySelector('.mqtt').addEventListener('click', async () => { await getClipboardText(item); this.mqtt(item) });
         // 选中状态 添加对应class
         item._selected = false;
         Object.defineProperty(item, "selected", {
@@ -534,7 +544,7 @@ class FilePreview {
             m3u8.src = 'img/parsing.png';
             m3u8.className = 'icon m3u8';
             m3u8.title = i18n.parser;
-            m3u8.addEventListener('click', () => this.openM3U8(item));
+            m3u8.addEventListener('click', async () => { await getClipboardText(item); this.openM3U8(item) });
             actions.appendChild(m3u8);
         }
 
@@ -544,7 +554,7 @@ class FilePreview {
             aria2.src = 'img/aria2.png';
             aria2.className = 'icon aria2';
             aria2.title = "aria2";
-            aria2.addEventListener('click', () => this.aria2(item));
+            aria2.addEventListener('click', async () => { await getClipboardText(item); this.aria2(item); });
             actions.appendChild(aria2);
         }
 
@@ -554,7 +564,7 @@ class FilePreview {
             invoke.src = 'img/invoke.svg';
             invoke.className = 'icon invoke';
             invoke.title = i18n.invoke;
-            invoke.addEventListener('click', () => this.invoke(item));
+            invoke.addEventListener('click', async () => { await getClipboardText(item); this.invoke(item); });
             actions.appendChild(invoke);
         }
 
@@ -564,7 +574,7 @@ class FilePreview {
             send.src = 'img/send.svg';
             send.className = 'icon send';
             send.title = i18n.send2local;
-            send.addEventListener('click', () => this.send(item));
+            send.addEventListener('click', async () => { await getClipboardText(item); this.send(item); });
             actions.appendChild(send);
         }
 
@@ -667,12 +677,17 @@ class FilePreview {
         Object.defineProperty(data, "pageDOM", {
             get: () => { return this.sourcePageDOM; }
         });
-
-        data.downFileName = G.TitleName ? templates(G.downFileName, data) : data.name;
-        data.downFileName = filterFileName(data.downFileName);
-        if (isEmpty(data.downFileName)) {
-            data.downFileName = data.name;
-        }
+        Object.defineProperty(data, "downFileName", {
+            get() {
+                let downFileName = G.TitleName ? templates(G.downFileName, data) : data.name;
+                downFileName = filterFileName(downFileName);
+                if (isEmpty(downFileName)) {
+                    downFileName = data.name;
+                }
+                return downFileName;
+            },
+            configurable: true
+        });
         data.ext = data.ext ? data.ext : 'Unknown';
         data.type = data.type ? data.type : 'Unknown';
         data.duration = data.duration ? data.duration : -1;
@@ -1152,7 +1167,7 @@ class FilePreview {
         if (!G.getHtmlDOM) { return; }
         try {
             const response = await chrome.tabs.sendMessage(this._tabId, { Message: "getPage" }, { frameId: 0 });
-            this.sourcePageDOM = new DOMParser().parseFromString(response, 'text/html');
+            this.sourcePageDOM = new DOMParser().parseFromString(sanitizeHtmlString(response), 'text/html');
             return this.sourcePageDOM;
         } catch (error) {
             console.warn("Failed to get source page DOM:", error);
