@@ -34,9 +34,10 @@
     "alarms",
     "scripting",
     "declarativeNetRequest",
-    "contextMenus",
-    "clipboardRead",
-    "clipboardWrite"
+    "contextMenus"
+  ],
+  "optional_permissions": [
+    "clipboardRead"
   ],
   "commands": {
     "_execute_browser_action": {},
@@ -92,5 +93,5 @@
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
   "default_locale": "en",
-  "version": "2.7.3"
+  "version": "2.7.4"
 }

@@ -33,9 +33,10 @@
     "declarativeNetRequest",
     "scripting",
     "sidePanel",
-    "contextMenus",
-    "clipboardRead",
-    "clipboardWrite"
+    "contextMenus"
+  ],
+  "optional_permissions": [
+    "clipboardRead"
   ],
   "commands": {
     "_execute_action": {},
@@ -82,6 +83,6 @@
     }
   ],
   "default_locale": "en",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "incognito": "split"
 }
